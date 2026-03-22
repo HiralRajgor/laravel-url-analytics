@@ -1,0 +1,138 @@
+### URL Analytics API — HTTP Client Examples
+### Compatible with: JetBrains HTTP Client, VS Code REST Client
+### Base URL: http://localhost:8000
+
+@base_url = http://localhost:8000
+@api_url = {{base_url}}/api/v1
+@token = <paste-your-sanctum-token-here>
+
+### ── Health Check ─────────────────────────────────────────────────────────────
+
+GET {{api_url}}/health
+Accept: application/json
+
+###
+
+### ── Shorten a URL (no auth required) ────────────────────────────────────────
+
+POST {{api_url}}/urls
+Content-Type: application/json
+
+{
+  "original_url": "https://example.com/very/long/marketing/campaign/path",
+  "title": "Summer Campaign 2025",
+  "custom_slug": "summer25",
+  "expires_at": "2025-12-31T23:59:59Z"
+}
+
+###
+
+### ── Shorten without custom slug (auto-generated) ────────────────────────────
+
+POST {{api_url}}/urls
+Content-Type: application/json
+
+{
+  "original_url": "https://github.com/torvalds/linux"
+}
+
+###
+
+### ── Test: invalid URL ────────────────────────────────────────────────────────
+
+POST {{api_url}}/urls
+Content-Type: application/json
+
+{
+  "original_url": "not-a-valid-url"
+}
+
+###
+
+### ── List my URLs (requires auth) ────────────────────────────────────────────
+
+GET {{api_url}}/urls
+Authorization: Bearer {{token}}
+Accept: application/json
+
+###
+
+### ── List with pagination ─────────────────────────────────────────────────────
+
+GET {{api_url}}/urls?page=2&per_page=5
+Authorization: Bearer {{token}}
+Accept: application/json
+
+###
+
+### ── Get URL detail ───────────────────────────────────────────────────────────
+
+GET {{api_url}}/urls/summer25
+Accept: application/json
+
+###
+
+### ── Get analytics (no auth required) ───────────────────────────────────────
+
+GET {{api_url}}/urls/summer25/stats
+Accept: application/json
+
+###
+
+### ── Update URL (requires auth + ownership) ──────────────────────────────────
+
+PATCH {{api_url}}/urls/summer25
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "Summer Campaign 2025 — Updated",
+  "is_active": true,
+  "expires_at": "2026-06-30T23:59:59Z"
+}
+
+###
+
+### ── Deactivate a URL ─────────────────────────────────────────────────────────
+
+PATCH {{api_url}}/urls/summer25
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "is_active": false
+}
+
+###
+
+### ── Delete a URL (requires auth + ownership) ────────────────────────────────
+
+DELETE {{api_url}}/urls/summer25
+Authorization: Bearer {{token}}
+
+###
+
+### ── Test a redirect (follow the 301) ───────────────────────────────────────
+
+GET {{base_url}}/summer25
+
+###
+
+### ── Test: expired code should return 410 ────────────────────────────────────
+### (seed an expired URL via: Url::factory()->expired()->create(['short_code' => 'oldlink']))
+
+GET {{base_url}}/oldlink
+
+###
+
+### ── Rate limit test: POST 11+ times to trigger 429 ─────────────────────────
+### Run this block 11 times quickly to see the 429 response
+
+POST {{api_url}}/urls
+Content-Type: application/json
+
+{
+  "original_url": "https://example.com/rate-limit-test"
+}
+
+###

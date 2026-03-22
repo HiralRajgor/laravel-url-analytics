@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
+         bootstrap="vendor/autoload.php"
+         colors="true"
+         stopOnFailure="false"
+>
+    <testsuites>
+        <testsuite name="Unit">
+            <directory>tests/Unit</directory>
+        </testsuite>
+        <testsuite name="Feature">
+            <directory>tests/Feature</directory>
+        </testsuite>
+    </testsuites>
+
+    <coverage>
+        <report>
+            <html outputDirectory="coverage-report"/>
+            <text outputFile="php://stdout" showUncoveredFiles="false"/>
+        </report>
+    </coverage>
+
+    <php>
+        <env name="APP_ENV"             value="testing"/>
+        <env name="APP_DEBUG"           value="true"/>
+        <env name="APP_KEY"             value="base64:test_key_32_chars_long_pad_here="/>
+
+        <!-- Use SQLite in-memory for speed — no Docker dependency in CI -->
+        <env name="DB_CONNECTION"       value="sqlite"/>
+        <env name="DB_DATABASE"         value=":memory:"/>
+
+        <!-- Use Redis DB 15 for tests — keeps test data isolated from dev -->
+        <env name="REDIS_DB"            value="15"/>
+        <env name="REDIS_CACHE_DB"      value="14"/>
+        <env name="CACHE_STORE"         value="redis"/>
+        <env name="QUEUE_CONNECTION"    value="sync"/>
+
+        <env name="URL_SHORTENER_DOMAIN"    value="http://localhost"/>
+        <env name="URL_SHORTENER_CODE_LENGTH" value="7"/>
+        <env name="RATE_LIMIT_SHORTEN"      value="60"/>
+        <env name="RATE_LIMIT_REDIRECT"     value="600"/>
+
+        <env name="LOG_CHANNEL"         value="null"/>
+    </php>
+
+    <source>
+        <include>
+            <directory>app</directory>
+        </include>
+        <exclude>
+            <directory>app/Console</directory>
+            <directory>app/Exceptions</directory>
+            <directory>app/Http/Middleware</directory>
+            <directory>app/Providers</directory>
+        </exclude>
+    </source>
+</phpunit>

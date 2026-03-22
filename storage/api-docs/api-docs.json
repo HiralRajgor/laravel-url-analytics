@@ -1,0 +1,524 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "URL Analytics API",
+        "description": "Production-grade URL shortener with async geo-IP analytics, Redis caching, and rate limiting.",
+        "contact": {
+            "email": "hiralrajgor@yopmail.com"
+        },
+        "license": {
+            "name": "MIT"
+        },
+        "version": "1.0.0"
+    },
+    "servers": [
+        {
+            "url": "/api/v1",
+            "description": "V1 API"
+        }
+    ],
+    "paths": {
+        "/health": {
+            "get": {
+                "tags": [
+                    "Health"
+                ],
+                "summary": "Service health check",
+                "description": "Returns the health status of the service and its dependencies. Use for k8s liveness/readiness probes.",
+                "operationId": "healthCheck",
+                "responses": {
+                    "200": {
+                        "description": "Service healthy",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "example": "healthy"
+                                        },
+                                        "checks": {
+                                            "properties": {
+                                                "database": {
+                                                    "type": "string",
+                                                    "example": "ok"
+                                                },
+                                                "cache": {
+                                                    "type": "string",
+                                                    "example": "ok"
+                                                },
+                                                "queue": {
+                                                    "type": "string",
+                                                    "example": "ok"
+                                                }
+                                            },
+                                            "type": "object"
+                                        },
+                                        "timestamp": {
+                                            "type": "string",
+                                            "format": "date-time"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "503": {
+                        "description": "Service unhealthy"
+                    }
+                }
+            }
+        },
+        "/{shortCode}": {
+            "get": {
+                "tags": [
+                    "Redirect"
+                ],
+                "summary": "Redirect to original URL",
+                "description": "Resolves a short code and returns a 301 redirect. Analytics are processed asynchronously.",
+                "operationId": "redirect",
+                "parameters": [
+                    {
+                        "name": "shortCode",
+                        "in": "path",
+                        "description": "The short code to resolve",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "example": "abc1234"
+                        }
+                    }
+                ],
+                "responses": {
+                    "301": {
+                        "description": "Redirect to original URL",
+                        "headers": {
+                            "Location": {
+                                "description": "The original URL",
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Short URL not found or expired"
+                    }
+                }
+            }
+        },
+        "/urls": {
+            "get": {
+                "tags": [
+                    "URLs"
+                ],
+                "summary": "List all shortened URLs",
+                "operationId": "listUrls",
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 1
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 15
+                        }
+                    },
+                    {
+                        "name": "filter[is_active]",
+                        "in": "query",
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Paginated list of URLs"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "URLs"
+                ],
+                "summary": "Shorten a new URL",
+                "operationId": "shortenUrl",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/StoreUrlRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "URL shortened successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UrlResource"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    },
+                    "429": {
+                        "description": "Rate limit exceeded"
+                    }
+                }
+            }
+        },
+        "/urls/{shortCode}": {
+            "get": {
+                "tags": [
+                    "URLs"
+                ],
+                "summary": "Get URL details",
+                "operationId": "showUrl",
+                "parameters": [
+                    {
+                        "name": "shortCode",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "URL details",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UrlResource"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not found"
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "URLs"
+                ],
+                "summary": "Delete a shortened URL",
+                "operationId": "deleteUrl",
+                "parameters": [
+                    {
+                        "name": "shortCode",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Deleted"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "patch": {
+                "tags": [
+                    "URLs"
+                ],
+                "summary": "Update URL metadata",
+                "operationId": "updateUrl",
+                "parameters": [
+                    {
+                        "name": "shortCode",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateUrlRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UrlResource"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Not found"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/urls/{shortCode}/stats": {
+            "get": {
+                "tags": [
+                    "Analytics"
+                ],
+                "summary": "Get click analytics for a URL",
+                "operationId": "getUrlStats",
+                "parameters": [
+                    {
+                        "name": "shortCode",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Analytics data",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UrlStatsResource"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not found"
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "StoreUrlRequest": {
+                "required": [
+                    "original_url"
+                ],
+                "properties": {
+                    "original_url": {
+                        "type": "string",
+                        "format": "url",
+                        "example": "https://example.com/very/long/path"
+                    },
+                    "custom_slug": {
+                        "type": "string",
+                        "example": "my-link",
+                        "nullable": true
+                    },
+                    "title": {
+                        "type": "string",
+                        "example": "My Campaign Link",
+                        "nullable": true
+                    },
+                    "expires_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
+            "UpdateUrlRequest": {
+                "properties": {
+                    "title": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "is_active": {
+                        "type": "boolean"
+                    },
+                    "expires_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
+            "UrlResource": {
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "short_code": {
+                        "type": "string",
+                        "example": "abc1234"
+                    },
+                    "short_url": {
+                        "type": "string",
+                        "example": "https://sho.rt/abc1234"
+                    },
+                    "original_url": {
+                        "type": "string"
+                    },
+                    "title": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "click_count": {
+                        "type": "integer"
+                    },
+                    "is_active": {
+                        "type": "boolean"
+                    },
+                    "expires_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "type": "object"
+            },
+            "UrlStatsResource": {
+                "properties": {
+                    "url_id": {
+                        "type": "integer"
+                    },
+                    "short_code": {
+                        "type": "string"
+                    },
+                    "short_url": {
+                        "type": "string"
+                    },
+                    "total_clicks": {
+                        "type": "integer"
+                    },
+                    "unique_clicks": {
+                        "type": "integer"
+                    },
+                    "clicks_over_time": {
+                        "type": "array",
+                        "items": {
+                            "properties": {
+                                "date": {
+                                    "type": "string",
+                                    "format": "date"
+                                },
+                                "clicks": {
+                                    "type": "integer"
+                                }
+                            },
+                            "type": "object"
+                        }
+                    },
+                    "top_countries": {
+                        "type": "array",
+                        "items": {
+                            "properties": {
+                                "label": {
+                                    "type": "string"
+                                },
+                                "count": {
+                                    "type": "integer"
+                                }
+                            },
+                            "type": "object"
+                        }
+                    },
+                    "device_breakdown": {
+                        "type": "array",
+                        "items": {
+                            "properties": {
+                                "label": {
+                                    "type": "string"
+                                },
+                                "count": {
+                                    "type": "integer"
+                                }
+                            },
+                            "type": "object"
+                        }
+                    },
+                    "computed_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "type": "object"
+            }
+        },
+        "securitySchemes": {
+            "bearerAuth": {
+                "type": "http",
+                "scheme": "bearer",
+                "bearerFormat": "Token"
+            }
+        }
+    },
+    "tags": [
+        {
+            "name": "Health",
+            "description": "Service health and readiness checks"
+        },
+        {
+            "name": "Redirect",
+            "description": "URL redirect endpoint"
+        },
+        {
+            "name": "URLs",
+            "description": "URL shortening and management"
+        },
+        {
+            "name": "Analytics",
+            "description": "Click analytics and statistics"
+        }
+    ]
+}
