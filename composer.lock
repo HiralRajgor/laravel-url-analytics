@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "6f3c3bebbdb1f0b5866c3035fc4cebd2",
+    "content-hash": "4cca945eaf9ee9dbe10eb7b8d0e69880",
     "packages": [
         {
             "name": "artisansdk/ratelimiter",
@@ -10536,7 +10536,7 @@
     "prefer-stable": true,
     "prefer-lowest": false,
     "platform": {
-        "php": "^8.3"
+        "php": "^8.4"
     },
     "platform-dev": {},
     "plugin-api-version": "2.9.0"

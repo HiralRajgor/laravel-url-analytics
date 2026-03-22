@@ -5,7 +5,7 @@
 [![Laravel](https://img.shields.io/badge/Laravel-12.x-red.svg)](https://laravel.com)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-**[Live Demo →](https://hiralrajgor.github.io/laravel-url-analytics/)**
+**[Live Demo →](https://hiralrajgor.github.io/laravel-url-analytics/index.html)**
 
 A production-grade URL shortener with async analytics, Redis-backed caching, atomic click counters, geo-IP enrichment, and a fully documented REST API.
 
