@@ -1,0 +1,1360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>URL Analytics — Live Demo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #080b0f;
+      --surface:   #0d1117;
+      --surface2:  #161b22;
+      --border:    #21262d;
+      --border2:   #30363d;
+      --green:     #3fb950;
+      --green-dim: #238636;
+      --cyan:      #79c0ff;
+      --orange:    #f0883e;
+      --red:       #f85149;
+      --purple:    #bc8cff;
+      --yellow:    #e3b341;
+      --text:      #e6edf3;
+      --text-muted:#7d8590;
+      --text-dim:  #484f58;
+      --accent:    #3fb950;
+      --radius:    8px;
+      --mono:      'JetBrains Mono', monospace;
+      --sans:      'Syne', sans-serif;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--mono);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── Grid noise overlay ── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        radial-gradient(ellipse 80% 50% at 20% 10%, rgba(63,185,80,.06) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 40% at 80% 80%, rgba(121,192,255,.04) 0%, transparent 60%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── Scanline effect ── */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0,0,0,.03) 2px,
+        rgba(0,0,0,.03) 4px
+      );
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ─── NAV ─────────────────────────────────────────────── */
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 2rem;
+      height: 56px;
+      background: rgba(8,11,15,.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: .6rem;
+      font-family: var(--sans);
+      font-weight: 700;
+      font-size: 1rem;
+      color: var(--text);
+      text-decoration: none;
+    }
+
+    .nav-brand .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 8px var(--green);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%,100% { opacity: 1; }
+      50%      { opacity: .4; }
+    }
+
+    .nav-links { display: flex; gap: 1.5rem; }
+    .nav-links a {
+      font-size: .75rem;
+      color: var(--text-muted);
+      text-decoration: none;
+      letter-spacing: .05em;
+      transition: color .2s;
+    }
+    .nav-links a:hover { color: var(--green); }
+
+    /* ─── HERO ────────────────────────────────────────────── */
+    .hero {
+      position: relative;
+      z-index: 1;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 5rem 2rem 3rem;
+      text-align: center;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: .5rem;
+      padding: .3rem .8rem;
+      border: 1px solid var(--green-dim);
+      border-radius: 20px;
+      background: rgba(63,185,80,.08);
+      font-size: .7rem;
+      color: var(--green);
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      margin-bottom: 1.5rem;
+    }
+
+    h1 {
+      font-family: var(--sans);
+      font-size: clamp(2.2rem, 5vw, 3.8rem);
+      font-weight: 800;
+      line-height: 1.1;
+      letter-spacing: -.02em;
+      margin-bottom: 1rem;
+    }
+
+    h1 span { color: var(--green); }
+
+    .hero-sub {
+      font-size: .9rem;
+      color: var(--text-muted);
+      line-height: 1.7;
+      max-width: 560px;
+      margin: 0 auto 2.5rem;
+    }
+
+    .hero-stack {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: .5rem;
+      margin-bottom: 3rem;
+    }
+
+    .tag {
+      padding: .25rem .65rem;
+      border: 1px solid var(--border2);
+      border-radius: 4px;
+      font-size: .68rem;
+      color: var(--text-muted);
+      letter-spacing: .04em;
+    }
+    .tag.green  { border-color: var(--green-dim);  color: var(--green);  background: rgba(63,185,80,.07); }
+    .tag.cyan   { border-color: #1f4a6e;            color: var(--cyan);   background: rgba(121,192,255,.06); }
+    .tag.orange { border-color: #6e3a1f;            color: var(--orange); background: rgba(240,136,62,.07); }
+    .tag.purple { border-color: #4a2e6e;            color: var(--purple); background: rgba(188,140,255,.07); }
+
+    /* ─── MAIN DEMO CARD ──────────────────────────────────── */
+    .container {
+      position: relative;
+      z-index: 1;
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 0 2rem 4rem;
+    }
+
+    .demo-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 0 0 1px rgba(255,255,255,.03), 0 24px 48px rgba(0,0,0,.4);
+    }
+
+    /* ── Window chrome ── */
+    .window-bar {
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      padding: .75rem 1rem;
+      background: var(--surface2);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .dot-red    { width:12px;height:12px;border-radius:50%;background:#ff5f57; }
+    .dot-yellow { width:12px;height:12px;border-radius:50%;background:#ffbd2e; }
+    .dot-green  { width:12px;height:12px;border-radius:50%;background:#28ca41; }
+
+    .window-title {
+      flex: 1;
+      text-align: center;
+      font-size: .72rem;
+      color: var(--text-dim);
+      letter-spacing: .04em;
+    }
+
+    /* ── Tabs ── */
+    .tabs {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface2);
+      overflow-x: auto;
+    }
+
+    .tab {
+      padding: .75rem 1.25rem;
+      font-size: .75rem;
+      color: var(--text-muted);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      white-space: nowrap;
+      transition: all .2s;
+      background: none;
+      border-top: none;
+      border-left: none;
+      border-right: none;
+      font-family: var(--mono);
+      letter-spacing: .03em;
+    }
+
+    .tab:hover { color: var(--text); background: rgba(255,255,255,.03); }
+    .tab.active { color: var(--green); border-bottom-color: var(--green); background: rgba(63,185,80,.05); }
+
+    /* ── Panel ── */
+    .panel { display: none; padding: 1.5rem; }
+    .panel.active { display: block; }
+
+    /* ── Form elements ── */
+    .field-group { margin-bottom: 1rem; }
+
+    label {
+      display: block;
+      font-size: .7rem;
+      color: var(--text-muted);
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      margin-bottom: .4rem;
+    }
+
+    input, select {
+      width: 100%;
+      padding: .6rem .9rem;
+      background: var(--bg);
+      border: 1px solid var(--border2);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: .82rem;
+      outline: none;
+      transition: border-color .2s, box-shadow .2s;
+    }
+
+    input:focus, select:focus {
+      border-color: var(--green);
+      box-shadow: 0 0 0 3px rgba(63,185,80,.12);
+    }
+
+    input::placeholder { color: var(--text-dim); }
+
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    @media(max-width:600px) { .row { grid-template-columns: 1fr; } }
+
+    /* ── Buttons ── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: .5rem;
+      padding: .65rem 1.4rem;
+      border-radius: var(--radius);
+      font-family: var(--mono);
+      font-size: .8rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: all .2s;
+      letter-spacing: .03em;
+    }
+
+    .btn-primary {
+      background: var(--green);
+      color: #000;
+      width: 100%;
+      justify-content: center;
+      margin-top: .5rem;
+    }
+    .btn-primary:hover { background: #56d364; transform: translateY(-1px); box-shadow: 0 4px 16px rgba(63,185,80,.3); }
+    .btn-primary:active { transform: translateY(0); }
+    .btn-primary:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+
+    .btn-ghost {
+      background: transparent;
+      border: 1px solid var(--border2);
+      color: var(--text-muted);
+      font-size: .75rem;
+      padding: .4rem .9rem;
+    }
+    .btn-ghost:hover { border-color: var(--text-muted); color: var(--text); }
+
+    /* ── Result box ── */
+    .result-box {
+      margin-top: 1.25rem;
+      border-radius: var(--radius);
+      overflow: hidden;
+      border: 1px solid var(--border);
+      display: none;
+    }
+    .result-box.visible { display: block; animation: slideIn .3s ease; }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .result-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: .6rem 1rem;
+      background: var(--surface2);
+      border-bottom: 1px solid var(--border);
+      font-size: .7rem;
+      color: var(--text-muted);
+      letter-spacing: .05em;
+    }
+
+    .result-status {
+      display: flex;
+      align-items: center;
+      gap: .4rem;
+      font-size: .72rem;
+    }
+    .status-dot { width:6px;height:6px;border-radius:50%; }
+    .status-ok  { background: var(--green); box-shadow: 0 0 6px var(--green); }
+    .status-err { background: var(--red);   box-shadow: 0 0 6px var(--red); }
+
+    .result-body {
+      padding: 1rem;
+      font-size: .78rem;
+      line-height: 1.8;
+      overflow-x: auto;
+    }
+
+    /* ── Short URL display ── */
+    .short-url-display {
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+      padding: .9rem 1rem;
+      background: rgba(63,185,80,.07);
+      border: 1px solid rgba(63,185,80,.2);
+      border-radius: var(--radius);
+      margin-top: 1rem;
+    }
+
+    .short-url-display a {
+      color: var(--green);
+      font-size: .9rem;
+      font-weight: 600;
+      text-decoration: none;
+      flex: 1;
+      letter-spacing: .02em;
+    }
+    .short-url-display a:hover { text-decoration: underline; }
+
+    /* ── JSON syntax highlight ── */
+    .json-key    { color: var(--cyan); }
+    .json-str    { color: var(--orange); }
+    .json-num    { color: var(--purple); }
+    .json-bool   { color: var(--green); }
+    .json-null   { color: var(--text-muted); }
+
+    /* ── Stats grid ── */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: .75rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .stat-card {
+      padding: 1rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      text-align: center;
+    }
+
+    .stat-number {
+      font-family: var(--sans);
+      font-size: 1.8rem;
+      font-weight: 800;
+      color: var(--text);
+      line-height: 1;
+      margin-bottom: .3rem;
+    }
+    .stat-number.green  { color: var(--green); }
+    .stat-number.cyan   { color: var(--cyan); }
+    .stat-number.orange { color: var(--orange); }
+
+    .stat-label {
+      font-size: .65rem;
+      color: var(--text-muted);
+      letter-spacing: .06em;
+      text-transform: uppercase;
+    }
+
+    /* ── Bar chart ── */
+    .bar-section { margin-bottom: 1.5rem; }
+
+    .bar-section h3 {
+      font-size: .7rem;
+      color: var(--text-muted);
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      margin-bottom: .75rem;
+      padding-bottom: .5rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .bar-row {
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+      margin-bottom: .5rem;
+      font-size: .75rem;
+    }
+
+    .bar-label { width: 100px; color: var(--text-muted); flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .bar-track { flex: 1; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+    .bar-fill  { height: 100%; border-radius: 3px; transition: width 1s cubic-bezier(.4,0,.2,1); }
+    .bar-count { width: 40px; text-align: right; color: var(--text-dim); font-size: .7rem; }
+
+    /* ── Sparkline ── */
+    .sparkline-wrap {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .sparkline-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+
+    .sparkline-header h3 {
+      font-size: .7rem;
+      color: var(--text-muted);
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .sparkline-header span {
+      font-size: .7rem;
+      color: var(--text-dim);
+    }
+
+    svg.sparkline { width: 100%; height: 80px; overflow: visible; }
+
+    /* ── URL list ── */
+    .url-list { display: flex; flex-direction: column; gap: .5rem; }
+
+    .url-row {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: .75rem 1rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      transition: border-color .2s;
+      font-size: .78rem;
+    }
+    .url-row:hover { border-color: var(--border2); }
+
+    .url-code {
+      color: var(--green);
+      font-weight: 600;
+      width: 100px;
+      flex-shrink: 0;
+    }
+
+    .url-original {
+      flex: 1;
+      color: var(--text-muted);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .url-clicks {
+      color: var(--cyan);
+      font-size: .7rem;
+      white-space: nowrap;
+    }
+
+    .url-badge {
+      padding: .15rem .5rem;
+      border-radius: 3px;
+      font-size: .65rem;
+      font-weight: 600;
+      letter-spacing: .04em;
+    }
+    .badge-active   { background: rgba(63,185,80,.15);  color: var(--green); }
+    .badge-expired  { background: rgba(248,81,73,.12);  color: var(--red); }
+    .badge-inactive { background: rgba(125,133,144,.1); color: var(--text-muted); }
+
+    /* ── Terminal block ── */
+    .terminal {
+      background: #010409;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      margin-bottom: 1.5rem;
+    }
+
+    .terminal-bar {
+      display: flex;
+      align-items: center;
+      gap: .4rem;
+      padding: .6rem 1rem;
+      background: var(--surface2);
+      border-bottom: 1px solid var(--border);
+      font-size: .7rem;
+      color: var(--text-dim);
+    }
+
+    .terminal-body {
+      padding: 1rem;
+      font-size: .78rem;
+      line-height: 1.8;
+    }
+
+    .t-prompt { color: var(--green); }
+    .t-cmd    { color: var(--text); }
+    .t-out    { color: var(--text-muted); }
+    .t-key    { color: var(--cyan); }
+    .t-val    { color: var(--orange); }
+    .t-num    { color: var(--purple); }
+    .t-bool   { color: var(--green); }
+
+    /* ── Section headers ── */
+    .section-title {
+      font-family: var(--sans);
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 1.25rem;
+      padding-bottom: .75rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: .6rem;
+    }
+    .section-title .icon { color: var(--green); }
+
+    /* ── Architecture cards ── */
+    .arch-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: .75rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .arch-card {
+      padding: 1rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      transition: border-color .2s, transform .2s;
+    }
+    .arch-card:hover { border-color: var(--border2); transform: translateY(-2px); }
+
+    .arch-card-head {
+      display: flex;
+      align-items: center;
+      gap: .6rem;
+      margin-bottom: .6rem;
+    }
+
+    .arch-icon {
+      width: 28px; height: 28px;
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: .9rem;
+      flex-shrink: 0;
+    }
+
+    .arch-card-title { font-size: .8rem; font-weight: 600; color: var(--text); }
+    .arch-card-desc  { font-size: .72rem; color: var(--text-muted); line-height: 1.6; }
+
+    /* ── Loader ── */
+    .loader {
+      display: inline-block;
+      width: 12px; height: 12px;
+      border: 2px solid var(--border2);
+      border-top-color: var(--green);
+      border-radius: 50%;
+      animation: spin .6s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Footer ── */
+    footer {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+      padding: 2rem;
+      border-top: 1px solid var(--border);
+      font-size: .72rem;
+      color: var(--text-dim);
+    }
+    footer a { color: var(--text-muted); text-decoration: none; }
+    footer a:hover { color: var(--green); }
+
+    /* ── Notification toast ── */
+    .toast {
+      position: fixed;
+      bottom: 2rem; right: 2rem;
+      padding: .7rem 1.2rem;
+      background: var(--surface2);
+      border: 1px solid var(--green-dim);
+      border-radius: var(--radius);
+      font-size: .78rem;
+      color: var(--green);
+      z-index: 1000;
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all .3s ease;
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+    }
+    .toast.show { transform: translateY(0); opacity: 1; }
+
+    /* ── Base URL config bar ── */
+    .config-bar {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: .75rem 1rem;
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+      flex-wrap: wrap;
+    }
+
+    .config-bar label {
+      text-transform: uppercase;
+      font-size: .65rem;
+      letter-spacing: .07em;
+      color: var(--text-dim);
+      margin: 0;
+      white-space: nowrap;
+    }
+
+    .config-bar input {
+      flex: 1;
+      min-width: 200px;
+      padding: .4rem .75rem;
+      font-size: .78rem;
+    }
+
+    .config-bar .status-indicator {
+      display: flex;
+      align-items: center;
+      gap: .4rem;
+      font-size: .72rem;
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+
+    /* ─── RESPONSIVE ─── */
+    @media(max-width:500px) {
+      nav { padding: 0 1rem; }
+      .hero { padding: 3rem 1rem 2rem; }
+      .container { padding: 0 1rem 3rem; }
+      .panel { padding: 1rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a class="nav-brand" href="#">
+    <span class="dot"></span>
+    url<span style="color:var(--green)">analytics</span>
+  </a>
+  <div class="nav-links">
+    <a href="#demo">Demo</a>
+    <a href="#architecture">Architecture</a>
+    <a href="https://github.com/yourname/laravel-url-analytics" target="_blank">GitHub ↗</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-badge">
+    <span class="dot" style="width:6px;height:6px;"></span>
+    Laravel 12 · Production Grade
+  </div>
+  <h1>URL Shortener<br/><span>with Analytics</span></h1>
+  <p class="hero-sub">
+    A fully documented REST API built on Laravel 12. Redis-backed caching,
+    async geo-IP enrichment, atomic click counters, rate limiting, and Swagger docs.
+    Every design decision is intentional.
+  </p>
+  <div class="hero-stack">
+    <span class="tag green">Laravel 12</span>
+    <span class="tag cyan">Redis</span>
+    <span class="tag orange">Async Queues</span>
+    <span class="tag purple">PHPUnit</span>
+    <span class="tag">SQLite / MySQL</span>
+    <span class="tag">Swagger / OpenAPI</span>
+    <span class="tag">Sanctum Auth</span>
+    <span class="tag">Rate Limiting</span>
+  </div>
+</section>
+
+<!-- MAIN CONTENT -->
+<div class="container" id="demo">
+
+  <!-- CONFIG BAR -->
+  <div class="config-bar">
+    <label>API Base URL</label>
+    <input type="text" id="baseUrl" value="http://localhost:8000" placeholder="http://localhost:8000" />
+    <button class="btn btn-ghost" onclick="pingHealth()">
+      <span id="ping-loader"></span>
+      Test Connection
+    </button>
+    <div class="status-indicator" id="conn-status">
+      <span class="status-dot" id="conn-dot" style="background:var(--text-dim);width:6px;height:6px;border-radius:50%;display:inline-block;"></span>
+      <span id="conn-label">not tested</span>
+    </div>
+  </div>
+
+  <!-- DEMO CARD -->
+  <div class="demo-card">
+    <div class="window-bar">
+      <div class="dot-red"></div>
+      <div class="dot-yellow"></div>
+      <div class="dot-green"></div>
+      <div class="window-title">url-analytics · live api demo</div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('shorten', this)">POST /urls</button>
+      <button class="tab" onclick="switchTab('stats', this)">GET /stats</button>
+      <button class="tab" onclick="switchTab('list', this)">GET /urls</button>
+      <button class="tab" onclick="switchTab('health', this)">GET /health</button>
+      <button class="tab" onclick="switchTab('terminal', this)">Terminal</button>
+    </div>
+
+    <!-- SHORTEN TAB -->
+    <div class="panel active" id="tab-shorten">
+      <div class="row">
+        <div class="field-group" style="grid-column:1/-1">
+          <label>Original URL *</label>
+          <input type="url" id="original-url" placeholder="https://example.com/very/long/path" value="https://github.com/laravel/laravel" />
+        </div>
+        <div class="field-group">
+          <label>Custom Slug (optional)</label>
+          <input type="text" id="custom-slug" placeholder="my-link" />
+        </div>
+        <div class="field-group">
+          <label>Title (optional)</label>
+          <input type="text" id="url-title" placeholder="My Link" />
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="shortenUrl()" id="shorten-btn">
+        <span id="shorten-loader"></span>
+        ⚡ Shorten URL
+      </button>
+
+      <div class="result-box" id="shorten-result">
+        <div class="result-header">
+          <span>RESPONSE</span>
+          <div class="result-status">
+            <span class="status-dot status-ok" id="shorten-status-dot"></span>
+            <span id="shorten-status-text">201 Created</span>
+          </div>
+        </div>
+        <div class="result-body">
+          <div class="short-url-display" id="short-url-display" style="display:none;">
+            <span>🔗</span>
+            <a href="#" id="short-url-link" target="_blank"></a>
+            <button class="btn btn-ghost" onclick="copyShortUrl()" style="font-size:.65rem;padding:.25rem .6rem;">Copy</button>
+            <button class="btn btn-ghost" onclick="loadStats()" style="font-size:.65rem;padding:.25rem .6rem;">Stats →</button>
+          </div>
+          <pre id="shorten-json" style="font-size:.75rem;line-height:1.7;margin-top:.75rem;"></pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- STATS TAB -->
+    <div class="panel" id="tab-stats">
+      <div class="field-group">
+        <label>Short Code</label>
+        <div style="display:flex;gap:.75rem;">
+          <input type="text" id="stats-code" placeholder="e.g. xKj9mQp" style="flex:1;" />
+          <button class="btn btn-primary" onclick="fetchStats()" style="width:auto;margin-top:0;padding:.6rem 1.2rem;">
+            <span id="stats-loader"></span>
+            Fetch
+          </button>
+        </div>
+      </div>
+
+      <div id="stats-display" style="display:none;">
+        <div class="stats-grid" id="stats-cards"></div>
+
+        <div class="sparkline-wrap">
+          <div class="sparkline-header">
+            <h3>Clicks — Last 30 Days</h3>
+            <span id="sparkline-range"></span>
+          </div>
+          <svg class="sparkline" id="sparkline-svg" viewBox="0 0 800 80" preserveAspectRatio="none"></svg>
+        </div>
+
+        <div class="bar-section">
+          <h3>Device Breakdown</h3>
+          <div id="device-bars"></div>
+        </div>
+
+        <div class="bar-section">
+          <h3>Top Countries</h3>
+          <div id="country-bars"></div>
+        </div>
+
+        <div class="bar-section">
+          <h3>Top Referrers</h3>
+          <div id="referrer-bars"></div>
+        </div>
+      </div>
+
+      <div id="stats-empty" style="text-align:center;padding:2rem;color:var(--text-dim);font-size:.8rem;">
+        Enter a short code above to load analytics
+      </div>
+    </div>
+
+    <!-- LIST TAB -->
+    <div class="panel" id="tab-list">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+        <span style="font-size:.75rem;color:var(--text-muted);">Recently shortened URLs</span>
+        <button class="btn btn-ghost" onclick="fetchUrlList()" style="font-size:.72rem;">
+          <span id="list-loader"></span>
+          ↻ Refresh
+        </button>
+      </div>
+      <div class="url-list" id="url-list">
+        <div style="text-align:center;padding:2rem;color:var(--text-dim);font-size:.8rem;">
+          Click Refresh to load URLs
+        </div>
+      </div>
+    </div>
+
+    <!-- HEALTH TAB -->
+    <div class="panel" id="tab-health">
+      <button class="btn btn-primary" onclick="pingHealth()" id="health-btn" style="margin-bottom:1.25rem;">
+        <span id="health-loader"></span>
+        🩺 Run Health Check
+      </button>
+      <div id="health-result" style="display:none;">
+        <div class="stats-grid" id="health-cards"></div>
+        <div class="result-box visible" id="health-json-box">
+          <div class="result-header">
+            <span>RAW RESPONSE</span>
+            <div class="result-status">
+              <span class="status-dot" id="health-dot"></span>
+              <span id="health-status-text"></span>
+            </div>
+          </div>
+          <div class="result-body">
+            <pre id="health-json" style="font-size:.75rem;line-height:1.7;"></pre>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TERMINAL TAB -->
+    <div class="panel" id="tab-terminal">
+      <div class="terminal">
+        <div class="terminal-bar">
+          <div class="dot-red"></div>
+          <div class="dot-yellow"></div>
+          <div class="dot-green"></div>
+          <span style="margin-left:.5rem;">bash — laravel-url-analytics</span>
+        </div>
+        <div class="terminal-body" id="terminal-body">
+          <div><span class="t-prompt">$</span> <span class="t-cmd">php artisan migrate --seed</span></div>
+          <div class="t-out">  INFO  Running migrations.</div>
+          <div class="t-out">  ✓ create_users_table ......................... 12ms</div>
+          <div class="t-out">  ✓ create_urls_table .......................... 8ms</div>
+          <div class="t-out">  ✓ create_clicks_table ........................ 9ms</div>
+          <div class="t-out">  INFO  Seeding database.</div>
+          <div class="t-out">  Seeded: demo@example.com | 10 active URLs with analytics data</div>
+          <br/>
+          <div><span class="t-prompt">$</span> <span class="t-cmd">php artisan test --parallel</span></div>
+          <div class="t-out">  PASS  Tests\Unit\Services\GeoIpServiceTest</div>
+          <div class="t-out">  PASS  Tests\Unit\Services\UrlCacheServiceTest</div>
+          <div class="t-out">  PASS  Tests\Unit\Services\UrlShortenerServiceTest</div>
+          <div class="t-out">  PASS  Tests\Unit\Jobs\ProcessClickAnalyticsTest</div>
+          <div class="t-out">  PASS  Tests\Feature\Api\UrlShortenTest</div>
+          <div class="t-out">  PASS  Tests\Feature\Api\RedirectTest</div>
+          <div class="t-out">  PASS  Tests\Feature\Api\AnalyticsStatsTest</div>
+          <div class="t-out">  PASS  Tests\Feature\Console\SyncClickCountsTest</div>
+          <br/>
+          <div class="t-out" style="color:var(--green);">  Tests:  24 passed (68 assertions)</div>
+          <div class="t-out" style="color:var(--green);">  Duration: 1.42s</div>
+          <br/>
+          <div><span class="t-prompt">$</span> <span class="t-cmd">php artisan queue:work redis --queue=analytics,default</span></div>
+          <div class="t-out">  INFO  Processing jobs from the [analytics, default] queues.</div>
+          <div id="terminal-live"></div>
+          <div><span class="t-prompt">$</span> <span class="t-cmd" id="terminal-cursor">█</span></div>
+        </div>
+      </div>
+
+      <div class="terminal">
+        <div class="terminal-bar">
+          <div class="dot-red"></div>
+          <div class="dot-yellow"></div>
+          <div class="dot-green"></div>
+          <span style="margin-left:.5rem;">Redis — atomic ops</span>
+        </div>
+        <div class="terminal-body">
+          <div class="t-out"># Atomic click counter (no DB write on redirect path)</div>
+          <div><span class="t-prompt">127.0.0.1:6379></span> <span class="t-cmd">INCR click_counter:xKj9mQp</span></div>
+          <div class="t-out">(integer) 847</div>
+          <br/>
+          <div class="t-out"># Unique click dedup — SET NX with 1h TTL</div>
+          <div><span class="t-prompt">127.0.0.1:6379></span> <span class="t-cmd">SET unique_click:xKj9mQp:a1b2c3 1 EX 3600 NX</span></div>
+          <div class="t-out">OK  <span style="color:var(--text-dim);"># first click — unique</span></div>
+          <div><span class="t-prompt">127.0.0.1:6379></span> <span class="t-cmd">SET unique_click:xKj9mQp:a1b2c3 1 EX 3600 NX</span></div>
+          <div class="t-out">(nil)  <span style="color:var(--text-dim);"># same IP within 1h — not unique</span></div>
+          <br/>
+          <div class="t-out"># Atomic drain (Lua) — GET + DEL in one operation</div>
+          <div><span class="t-prompt">127.0.0.1:6379></span> <span class="t-cmd">EVAL "local v=redis.call('GET',KEYS[1]) ..."</span></div>
+          <div class="t-out">(integer) 847  <span style="color:var(--text-dim);"># flushed to MySQL, counter reset</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ARCHITECTURE -->
+  <div style="margin-top:3rem;" id="architecture">
+    <div class="section-title">
+      <span class="icon">⬡</span>
+      Architecture Highlights
+    </div>
+    <div class="arch-grid">
+      <div class="arch-card">
+        <div class="arch-card-head">
+          <div class="arch-icon" style="background:rgba(63,185,80,.1);">⚡</div>
+          <div class="arch-card-title">Cache-First Redirect</div>
+        </div>
+        <div class="arch-card-desc">Redis lookup on every redirect. DB query only on cache miss. &lt;5ms on hit, &lt;25ms on miss. Zero blocking I/O on the hot path.</div>
+      </div>
+      <div class="arch-card">
+        <div class="arch-card-head">
+          <div class="arch-icon" style="background:rgba(121,192,255,.1);">🌍</div>
+          <div class="arch-card-title">Async Geo-IP</div>
+        </div>
+        <div class="arch-card-desc">Inline geo-IP adds 150–300ms to every redirect. We dispatch a queued job instead — the 301 fires before enrichment even starts.</div>
+      </div>
+      <div class="arch-card">
+        <div class="arch-card-head">
+          <div class="arch-icon" style="background:rgba(188,140,255,.1);">🔢</div>
+          <div class="arch-card-title">Atomic Counters</div>
+        </div>
+        <div class="arch-card-desc">Redis INCR on every click (~1µs). Lua script drains counters to MySQL every minute. Zero DB writes on the redirect path.</div>
+      </div>
+      <div class="arch-card">
+        <div class="arch-card-head">
+          <div class="arch-icon" style="background:rgba(240,136,62,.1);">🛡</div>
+          <div class="arch-card-title">Rate Limiting</div>
+        </div>
+        <div class="arch-card-desc">Separate limiters: 10/min on shorten (prevents spam), 120/min on redirect (prevents enumeration). Per-user when authenticated.</div>
+      </div>
+      <div class="arch-card">
+        <div class="arch-card-head">
+          <div class="arch-icon" style="background:rgba(227,179,65,.1);">🧪</div>
+          <div class="arch-card-title">Full Test Suite</div>
+        </div>
+        <div class="arch-card-desc">Unit tests mock all I/O. Feature tests use SQLite :memory: + real Redis DB 15. Http::fake() for geo-IP, Queue::fake() for jobs.</div>
+      </div>
+      <div class="arch-card">
+        <div class="arch-card-head">
+          <div class="arch-icon" style="background:rgba(63,185,80,.1);">📋</div>
+          <div class="arch-card-title">OpenAPI Docs</div>
+        </div>
+        <div class="arch-card-desc">Full Swagger UI auto-generated from PHPDoc annotations. Every endpoint documented with request/response schemas and auth requirements.</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <p>Built with Laravel 12 · PHP 8.3 · Redis · SQLite/MySQL</p>
+  <p style="margin-top:.4rem;">
+    <a href="https://github.com/HiralRajgor/laravel-url-analytics" target="_blank">View on GitHub ↗</a>
+    &nbsp;·&nbsp;
+    <a href="http://localhost:8000/api/documentation" target="_blank">Swagger Docs ↗</a>
+  </p>
+</footer>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+  // ── Helpers ───────────────────────────────────────────────────────────────
+
+  function base() {
+    return document.getElementById('baseUrl').value.replace(/\/$/, '');
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = '✓ ' + msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2500);
+  }
+
+  function setLoader(id, active) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.innerHTML = active ? '<span class="loader"></span>' : '';
+  }
+
+  function switchTab(name, btn) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-' + name).classList.add('active');
+  }
+
+  function syntaxHighlight(obj) {
+    const json = JSON.stringify(obj, null, 2);
+    return json.replace(
+      /("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g,
+      match => {
+        if (/^"/.test(match)) {
+          if (/:$/.test(match)) return `<span class="json-key">${match}</span>`;
+          return `<span class="json-str">${match}</span>`;
+        }
+        if (/true|false/.test(match)) return `<span class="json-bool">${match}</span>`;
+        if (/null/.test(match))       return `<span class="json-null">${match}</span>`;
+        return `<span class="json-num">${match}</span>`;
+      }
+    );
+  }
+
+  // ── Shorten ───────────────────────────────────────────────────────────────
+
+  let lastShortCode = null;
+
+  async function shortenUrl() {
+    const url   = document.getElementById('original-url').value.trim();
+    const slug  = document.getElementById('custom-slug').value.trim();
+    const title = document.getElementById('url-title').value.trim();
+
+    if (!url) { showToast('Please enter a URL'); return; }
+
+    setLoader('shorten-loader', true);
+    document.getElementById('shorten-btn').disabled = true;
+
+    const body = { original_url: url };
+    if (slug)  body.custom_slug = slug;
+    if (title) body.title = title;
+
+    try {
+      const res  = await fetch(`${base()}/api/v1/urls`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify(body),
+      });
+
+      const data = await res.json();
+      const box  = document.getElementById('shorten-result');
+      const dot  = document.getElementById('shorten-status-dot');
+      const txt  = document.getElementById('shorten-status-text');
+      const pre  = document.getElementById('shorten-json');
+
+      box.classList.add('visible');
+      dot.className = 'status-dot ' + (res.ok ? 'status-ok' : 'status-err');
+      txt.textContent = res.status + ' ' + (res.ok ? 'Created' : 'Error');
+      pre.innerHTML = syntaxHighlight(data);
+
+      if (res.ok && data.data) {
+        lastShortCode = data.data.short_code;
+        const display = document.getElementById('short-url-display');
+        const link    = document.getElementById('short-url-link');
+        display.style.display = 'flex';
+        link.href = data.data.short_url;
+        link.textContent = data.data.short_url;
+        showToast('URL shortened successfully!');
+
+        // Add to terminal
+        const live = document.getElementById('terminal-live');
+        live.innerHTML += `<div class="t-out">  ✓ ProcessClickAnalytics dispatched for <span style="color:var(--green)">${lastShortCode}</span></div>`;
+      }
+    } catch (e) {
+      const box = document.getElementById('shorten-result');
+      box.classList.add('visible');
+      document.getElementById('shorten-json').innerHTML =
+        `<span style="color:var(--red)">Connection failed — is the server running at ${base()}?</span>`;
+    } finally {
+      setLoader('shorten-loader', false);
+      document.getElementById('shorten-btn').disabled = false;
+    }
+  }
+
+  function copyShortUrl() {
+    const url = document.getElementById('short-url-link').href;
+    navigator.clipboard.writeText(url).then(() => showToast('Copied to clipboard'));
+  }
+
+  function loadStats() {
+    if (!lastShortCode) return;
+    document.getElementById('stats-code').value = lastShortCode;
+    document.querySelectorAll('.tab')[1].click();
+    fetchStats();
+  }
+
+  // ── Stats ─────────────────────────────────────────────────────────────────
+
+  async function fetchStats() {
+    const code = document.getElementById('stats-code').value.trim();
+    if (!code) { showToast('Enter a short code'); return; }
+
+    setLoader('stats-loader', true);
+    document.getElementById('stats-display').style.display = 'none';
+    document.getElementById('stats-empty').style.display = 'none';
+
+    try {
+      const res  = await fetch(`${base()}/api/v1/urls/${code}/stats`, {
+        headers: { 'Accept': 'application/json' }
+      });
+      const json = await res.json();
+
+      if (!res.ok) {
+        document.getElementById('stats-empty').style.display = 'block';
+        document.getElementById('stats-empty').textContent = json.message || 'Not found';
+        return;
+      }
+
+      const d = json.data;
+      renderStats(d);
+      document.getElementById('stats-display').style.display = 'block';
+    } catch (e) {
+      document.getElementById('stats-empty').style.display = 'block';
+      document.getElementById('stats-empty').textContent = 'Connection failed — is the server running?';
+    } finally {
+      setLoader('stats-loader', false);
+    }
+  }
+
+  function renderStats(d) {
+    // Stat cards
+    document.getElementById('stats-cards').innerHTML = `
+      <div class="stat-card">
+        <div class="stat-number green">${(d.total_clicks||0).toLocaleString()}</div>
+        <div class="stat-label">Total Clicks</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number cyan">${(d.unique_clicks||0).toLocaleString()}</div>
+        <div class="stat-label">Unique Clicks</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number orange">${d.top_countries?.length || 0}</div>
+        <div class="stat-label">Countries</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number">${d.device_breakdown?.length || 0}</div>
+        <div class="stat-label">Device Types</div>
+      </div>
+    `;
+
+    // Sparkline
+    renderSparkline(d.clicks_over_time || []);
+
+    // Bars
+    renderBars('device-bars', d.device_breakdown || [], '#3fb950');
+    renderBars('country-bars', d.top_countries || [], '#79c0ff');
+    renderBars('referrer-bars', d.top_referrers || [], '#f0883e');
+  }
+
+  function renderSparkline(data) {
+    const svg = document.getElementById('sparkline-svg');
+    if (!data.length) { svg.innerHTML = '<text x="400" y="40" text-anchor="middle" fill="#484f58" font-size="12">No data yet</text>'; return; }
+
+    const max    = Math.max(...data.map(d => d.clicks), 1);
+    const w      = 800;
+    const h      = 70;
+    const step   = w / Math.max(data.length - 1, 1);
+    const points = data.map((d, i) => `${i * step},${h - (d.clicks / max) * h}`);
+    const area   = `M${points.join('L')}L${(data.length-1)*step},${h}L0,${h}Z`;
+
+    svg.innerHTML = `
+      <defs>
+        <linearGradient id="grad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%"   stop-color="#3fb950" stop-opacity=".4"/>
+          <stop offset="100%" stop-color="#3fb950" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+      <path d="${area}" fill="url(#grad)"/>
+      <polyline points="${points.join(' ')}" fill="none" stroke="#3fb950" stroke-width="2" stroke-linejoin="round"/>
+      ${data.map((d,i) => `<circle cx="${i*step}" cy="${h-(d.clicks/max)*h}" r="3" fill="#3fb950"/>`).join('')}
+    `;
+
+    if (data.length) {
+      document.getElementById('sparkline-range').textContent =
+        data[0].date + ' → ' + data[data.length-1].date;
+    }
+  }
+
+  function renderBars(containerId, items, color) {
+    if (!items.length) {
+      document.getElementById(containerId).innerHTML =
+        '<div style="font-size:.72rem;color:var(--text-dim);padding:.5rem 0;">No data yet — visit the short URL to record clicks</div>';
+      return;
+    }
+    const max = Math.max(...items.map(i => i.count), 1);
+    document.getElementById(containerId).innerHTML = items.map(item => `
+      <div class="bar-row">
+        <div class="bar-label" title="${item.label}">${item.label || 'Unknown'}</div>
+        <div class="bar-track">
+          <div class="bar-fill" style="width:${(item.count/max*100).toFixed(1)}%;background:${color};"></div>
+        </div>
+        <div class="bar-count">${item.count}</div>
+      </div>
+    `).join('');
+  }
+
+  // ── URL List ──────────────────────────────────────────────────────────────
+
+  async function fetchUrlList() {
+    setLoader('list-loader', true);
+    try {
+      const res  = await fetch(`${base()}/api/v1/urls`, { headers: { 'Accept': 'application/json' } });
+      const json = await res.json();
+
+      if (!res.ok || !json.data?.length) {
+        document.getElementById('url-list').innerHTML =
+          '<div style="text-align:center;padding:2rem;color:var(--text-dim);font-size:.8rem;">No URLs found — shorten one first</div>';
+        return;
+      }
+
+      document.getElementById('url-list').innerHTML = json.data.map(url => `
+        <div class="url-row">
+          <div class="url-code" title="${url.short_url}">${url.short_code}</div>
+          <div class="url-original" title="${url.original_url}">${url.original_url}</div>
+          <div class="url-clicks">↗ ${(url.click_count||0).toLocaleString()} clicks</div>
+          <span class="url-badge ${url.is_expired ? 'badge-expired' : url.is_active ? 'badge-active' : 'badge-inactive'}">
+            ${url.is_expired ? 'expired' : url.is_active ? 'active' : 'inactive'}
+          </span>
+          <button class="btn btn-ghost" onclick="document.getElementById('stats-code').value='${url.short_code}';document.querySelectorAll('.tab')[1].click();fetchStats();" style="font-size:.65rem;padding:.25rem .6rem;">Stats</button>
+        </div>
+      `).join('');
+    } catch (e) {
+      document.getElementById('url-list').innerHTML =
+        '<div style="text-align:center;padding:2rem;color:var(--red);font-size:.8rem;">Connection failed</div>';
+    } finally {
+      setLoader('list-loader', false);
+    }
+  }
+
+  // ── Health ────────────────────────────────────────────────────────────────
+
+  async function pingHealth() {
+    setLoader('health-loader', true);
+    setLoader('ping-loader', true);
+
+    const connDot   = document.getElementById('conn-dot');
+    const connLabel = document.getElementById('conn-label');
+
+    try {
+      const res  = await fetch(`${base()}/api/health`, { headers: { 'Accept': 'application/json' } });
+      const data = await res.json();
+
+      connDot.style.background   = res.ok ? 'var(--green)' : 'var(--orange)';
+      connDot.style.boxShadow    = res.ok ? '0 0 6px var(--green)' : 'none';
+      connLabel.textContent      = res.ok ? 'connected' : 'degraded';
+      connLabel.style.color      = res.ok ? 'var(--green)' : 'var(--orange)';
+
+      // Cards
+      const checks = data.checks || {};
+      document.getElementById('health-cards').innerHTML = Object.entries(checks).map(([k,v]) => {
+        const ok    = v === 'ok' || v?.startsWith('ok');
+        const color = ok ? 'green' : 'orange';
+        return `
+          <div class="stat-card">
+            <div class="stat-number ${color}" style="font-size:1.2rem;">${ok ? '✓' : '⚠'}</div>
+            <div class="stat-label">${k}</div>
+            <div style="font-size:.65rem;color:var(--text-dim);margin-top:.25rem;">${v}</div>
+          </div>
+        `;
+      }).join('');
+
+      const dot = document.getElementById('health-dot');
+      dot.className = 'status-dot ' + (data.status === 'healthy' ? 'status-ok' : 'status-err');
+      document.getElementById('health-status-text').textContent = data.status;
+      document.getElementById('health-json').innerHTML = syntaxHighlight(data);
+      document.getElementById('health-result').style.display = 'block';
+
+    } catch (e) {
+      connDot.style.background = 'var(--red)';
+      connLabel.textContent    = 'unreachable';
+      connLabel.style.color    = 'var(--red)';
+    } finally {
+      setLoader('health-loader', false);
+      setLoader('ping-loader', false);
+    }
+  }
+
+  // ── Terminal cursor blink ─────────────────────────────────────────────────
+  let cursorOn = true;
+  setInterval(() => {
+    const c = document.getElementById('terminal-cursor');
+    if (c) { c.textContent = cursorOn ? '█' : ' '; cursorOn = !cursorOn; }
+  }, 600);
+
+  // ── Enter key on inputs ───────────────────────────────────────────────────
+  document.getElementById('original-url')?.addEventListener('keydown', e => { if(e.key==='Enter') shortenUrl(); });
+  document.getElementById('stats-code')?.addEventListener('keydown',   e => { if(e.key==='Enter') fetchStats(); });
+</script>
+</body>
+</html>
